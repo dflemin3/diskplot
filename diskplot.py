@@ -10,7 +10,6 @@ circumbinary nature.
 
 import numpy as np
 from matplotlib.pylab import *
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pylab as plt
 
 def plot_polar_contour(z, angles, radius, num=30,
@@ -179,10 +178,7 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',**kwags):
     H, xedges,yedges = np.histogram2d(y,x,bins=bins)
    
     # Plot heatmap ensuring correct plot size
-    if float(x.max()) > float(y.max()):
-        aspectratio = float(x.max()-x.min())/float(y.max()-y.min())
-    else:
-        aspectratio = float(y.max()-y.min())/float(x.max()-x.min())
+    aspectratio = float(x.max()-x.min())/float(y.max()-y.min())    
     im = ax.imshow(H, extent=[x.min(),x.max(),y.min(),y.max()], cmap='hot',
                     interpolation='nearest', origin='lower', aspect=aspectratio,
                     **kwags)
