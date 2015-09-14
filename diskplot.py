@@ -10,6 +10,7 @@ circumbinary nature.
 
 import numpy as np
 from matplotlib.pylab import *
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pylab as plt
 
 def plot_polar_contour(z, angles, radius, num=30,
@@ -122,10 +123,11 @@ def plot_polar_heatmap(radius, theta, bins=50, label='Number Density',
     cax : matplotlib contourf object
         the plot itself
     """
-    #Map coordinates    
+    #Map coordinates
     conv = np.pi/180.    
     x = radius*np.cos(theta*conv)
     y = radius*np.sin(theta*conv)
+    assert len(x) == len(y), "x and y must have the same length."    
     
     #Create 2D histogram for heatmap
     heatmap, xedges, yedges = np.histogram2d(x, y, bins=bins)
@@ -135,4 +137,66 @@ def plot_polar_heatmap(radius, theta, bins=50, label='Number Density',
     radius = np.linspace(radius.min(),radius.max(),bins)
     return plot_polar_contour(heatmap,angles,radius,label=label,cm=cm,**kwargs)
     
+#end function
+    
+def plot_heatmap(x,y,labels=[],bins=50,cm='hot',**kwags):
+    """
+    Plot a polar heatmap (2d histogram in polar coordinates) of the given quantities.
+    The supplied quantities, radius and theta, must be able to be represented in polar
+    coordinates.
+ 
+    Parameters
+    ----------
+    x : array
+    y : array
+    label : list 
+        list of len 3 containing [x label, y label, colorbar label]
+    cm : string
+        name of valid matplotlib colormap
+    **kwargs : dict
+        dict of parameters accepted by matplotlib
+  
+    Returns
+    -------
+    fig : matplotlib figure object
+        figure to plot, save, etc
+    ax : matplotlib axis object
+        polar axis where things are plotted
+    im : matplotlib plot object
+        the plot itself
+    """
+    #Default labels if none or incorrect number suppled
+    if labels == [] or len(labels) != 3:
+        labels = ['x axis', 'y axis', 'Number']
+    
+    assert len(x) == len(y), "x and y must have the same length."    
+    
+    #Create figure, axis for plotting
+    fig = plt.figure()
+    ax = fig.add_subplot(1,1,1)
+
+    #Make 2D histogram of data so it follows Cartesian convention
+    H, xedges,yedges = np.histogram2d(y,x,bins=bins)
+   
+    # Plot heatmap ensuring correct plot size
+    if float(x.max()) > float(y.max()):
+        aspectratio = float(x.max()-x.min())/float(y.max()-y.min())
+    else:
+        aspectratio = float(y.max()-y.min())/float(x.max()-x.min())
+    im = ax.imshow(H, extent=[x.min(),x.max(),y.min(),y.max()], cmap='hot',
+                    interpolation='nearest', origin='lower', aspect=aspectratio,
+                    **kwags)
+                    
+    #Format colorbar
+    cb = fig.colorbar(im)
+    cb.set_label(labels[2])
+    
+    #Format axes
+    ax.set_xlabel(labels[0])
+    ax.set_ylabel(labels[1])
+    ax.set_xlim(x.min(),x.max())
+    ax.set_ylim(y.min(),y.max())    
+ 
+    return fig, ax, im
+  
 #end function
