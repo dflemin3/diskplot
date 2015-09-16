@@ -11,6 +11,7 @@ circumbinary nature.
 import numpy as np
 from matplotlib.pylab import *
 import matplotlib.pylab as plt
+from matplotlib.colors import LogNorm
 
 def plot_polar_contour(z, angles, radius, num=30,
                        label='Number Density', cm='rainbow', **kwargs):
@@ -18,6 +19,8 @@ def plot_polar_contour(z, angles, radius, num=30,
     Plot a polar contour plot with 0 degrees at the x axis (y = 0)
     Based on the useful function found in the following link:
     http://blog.rtwilson.com/producing-polar-contour-plots-with-matplotlib/ 
+ 
+    !!! Currently broken !!! 
  
     Parameters
     ----------
@@ -86,6 +89,8 @@ def plot_polar_heatmap(radius, theta, bins=50, label='Number Density',
     The supplied quantities, radius and theta, must be able to be represented in polar
     coordinates.
  
+    !!! Currently broken: radial direction is weird !!! 
+ 
     Parameters
     ----------
  
@@ -138,7 +143,7 @@ def plot_polar_heatmap(radius, theta, bins=50, label='Number Density',
     
 #end function
     
-def plot_heatmap(x,y,labels=[],bins=50,cm='hot',**kwags):
+def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,**kwags):
     """
     Plot a polar heatmap (2d histogram in polar coordinates) of the given quantities.
     The supplied quantities, radius and theta, must be able to be represented in polar
@@ -152,6 +157,8 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',**kwags):
         list of len 3 containing [x label, y label, colorbar label]
     cm : string
         name of valid matplotlib colormap
+    norm : string
+        whether or not to 'log' colorbar. Default is no log (None)
     **kwargs : dict
         dict of parameters accepted by matplotlib
   
@@ -167,6 +174,10 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',**kwags):
     #Default labels if none or incorrect number suppled
     if labels == [] or len(labels) != 3:
         labels = ['x axis', 'y axis', 'Number']
+        
+    #Log colorbar?
+    if norm == 'log':
+        norm = LogNorm()
     
     assert len(x) == len(y), "x and y must have the same length."    
     
@@ -179,13 +190,13 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',**kwags):
    
     # Plot heatmap ensuring correct plot size
     aspectratio = float(x.max()-x.min())/float(y.max()-y.min())    
-    im = ax.imshow(H, extent=[x.min(),x.max(),y.min(),y.max()], cmap='hot',
+    im = ax.imshow(H, extent=[x.min(),x.max(),y.min(),y.max()], cmap=cm,norm=norm,
                     interpolation='nearest', origin='lower', aspect=aspectratio,
                     **kwags)
                     
     #Format colorbar
     cb = fig.colorbar(im)
-    cb.set_label(labels[2])
+    cb.set_label(labels[2],rotation=270,labelpad=30)
     
     #Format axes
     ax.set_xlabel(labels[0])
