@@ -78,7 +78,7 @@ def plot_polar_contour(z, angles, radius, num=30,
     cb = fig.colorbar(cax)
     cb.set_label(label)
  
-    return fig, ax, cax
+    return fig, ax, cax, cb
     
 #end function
     
@@ -143,7 +143,7 @@ def plot_polar_heatmap(radius, theta, bins=50, label='Number Density',
     
 #end function
     
-def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,**kwags):
+def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,vmin=None,vmax=None,hist_range=None,**kwags):
     """
     Plot a polar heatmap (2d histogram in polar coordinates) of the given quantities.
     The supplied quantities, radius and theta, must be able to be represented in polar
@@ -174,25 +174,47 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,**kwags):
     #Default labels if none or incorrect number suppled
     if labels == [] or len(labels) != 3:
         labels = ['x axis', 'y axis', 'Number']
-        
-    #Log colorbar?
-    if norm == 'log':
-        norm = LogNorm()
     
-    assert len(x) == len(y), "x and y must have the same length."    
+    assert len(x) == len(y), "x and y must have the same length."        
     
     #Create figure, axis for plotting
     fig = plt.figure()
     ax = fig.add_subplot(1,1,1)
 
     #Make 2D histogram of data so it follows Cartesian convention
-    H, xedges,yedges = np.histogram2d(y,x,bins=bins)
+    #Switch up y and x so that it is plotted as expected
+    H, xedges,yedges = np.histogram2d(x,y,bins=bins,range=hist_range)
+   
+    #Configure colorbar
+    #No log, limits given
+    if norm == None and vmin != None and vmax != None:
+        norm = mpl.colors.Normalize(vmin=vmin,vmax=vmax)
+   
+    #Log colorbar? limits given?
+    if norm == 'log' and vmin!= None and vmax != None:
+        norm = LogNorm(vmin=vmin,vmax=vmax) #Can't have < 1 particles in logspace   
+    elif norm == 'log': #set default limits
+        norm = LogNorm(vmin=H.min(),vmax=H.max()) #Can't have < 1 particles in logspace   
+
    
     # Plot heatmap ensuring correct plot size
-    aspectratio = float(x.max()-x.min())/float(y.max()-y.min())    
-    im = ax.imshow(H, extent=[x.min(),x.max(),y.min(),y.max()], cmap=cm,norm=norm,
+    if hist_range != None:
+        x_min = hist_range[0][0]
+        x_max = hist_range[0][1]
+        y_min = hist_range[1][0]
+        y_max = hist_range[1][1]
+    else:
+        x_min = x.min()
+        x_max = x.max()
+        y_min = y.min()
+        y_max = y.max()
+   
+    extent = [x_min,x_max,y_min,y_max]   
+    aspectratio = 1
+    im = ax.imshow(H.T, extent=extent, cmap=cm,norm=norm,
                     interpolation='nearest', origin='lower', aspect=aspectratio,
                     **kwags)
+    ax.set_aspect(np.fabs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspectratio)
                     
     #Format colorbar
     cb = fig.colorbar(im)
@@ -204,6 +226,6 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,**kwags):
     ax.set_xlim(x.min(),x.max())
     ax.set_ylim(y.min(),y.max())    
  
-    return fig, ax, im
+    return fig, ax, im, cb
   
 #end function
