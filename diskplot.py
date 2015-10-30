@@ -143,11 +143,10 @@ def plot_polar_heatmap(radius, theta, bins=50, label='Number Density',
     
 #end function
     
-def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,vmin=None,vmax=None,hist_range=None,**kwags):
+def plot_heatmap(x,y,labels=[],bins=50,avg=None,cm='hot',norm=None,vmin=None,vmax=None,hist_range=None,
+                 ax=None,fig=None,cb_loc=None,**kwags):
     """
-    Plot a polar heatmap (2d histogram in polar coordinates) of the given quantities.
-    The supplied quantities, radius and theta, must be able to be represented in polar
-    coordinates.
+    Plot a heatmap (2d histogram) of the given quantities x and y.
  
     Parameters
     ----------
@@ -155,38 +154,73 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,vmin=None,vmax=None,hi
     y : array
     label : list 
         list of len 3 containing [x label, y label, colorbar label]
+    bins : int
+        number of histogram bins
+    avg : string
+        which axis, if any, to average over to plot overdensities and the like
+        accepts 'x' or 'y'
     cm : string
         name of valid matplotlib colormap
     norm : string
         whether or not to 'log' colorbar. Default is no log (None)
+    vmin, vmax : float
+        min, max for colorbar
+    hist_range : list of the form [[x_min,x_max],[y_min,y_max]]
+        specifies maximum range for numpy histogram2d (see numpy docs
+        for histogram2d's range param) and also is used to scale the
+        resultant plot such that for x, you only see xmin to xmax and so on
+    ax : matplotlib axis object
+        if specified with fig, the plot is plotted on this axis
+    fig : matplotlib figure object
+        if specified with ax, the plot is plotted on ax in fig
+    cb_loc : list
+        if specified, gives location of colorbar. see the following
+        http://stackoverflow.com/questions/13310594/positioning-the-colorbar
     **kwargs : dict
-        dict of parameters accepted by matplotlib
+        dict of parameters accepted by matplotlib imshow
   
     Returns
     -------
-    fig : matplotlib figure object
-        figure to plot, save, etc
     ax : matplotlib axis object
         polar axis where things are plotted
     im : matplotlib plot object
         the plot itself
+    cb : matplotlib colorbar object
     """
-    #Default labels if none or incorrect number suppled
+    # Default labels if none or incorrect number suppled
     if labels == [] or len(labels) != 3:
         labels = ['x axis', 'y axis', 'Number']
     
+    # Ensure x, y are histogram2d-able
     assert len(x) == len(y), "x and y must have the same length."        
     
-    #Create figure, axis for plotting
-    fig = plt.figure()
-    ax = fig.add_subplot(1,1,1)
+    # Create figure, axis for plotting if one is not passed
+    assert( (ax == None and fig == None) or (ax != None and fig != None)), \
+        "Must specify both an axis and figure or neither!"
+    
+    # If none supplied make one    
+    if ax == None and fig == None:
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
 
-    #Make 2D histogram of data so it follows Cartesian convention
-    #Switch up y and x so that it is plotted as expected
+    # Make 2D histogram of data so it follows Cartesian convention
     H, xedges,yedges = np.histogram2d(x,y,bins=bins,range=hist_range)
    
-    #Configure colorbar
-    #No log, limits given
+    # Average over an axis to plot an overdensity?
+    if avg != None:
+        if avg == 'x' or avg == 'X':
+            tmp = np.sum(H,axis=0).reshape(bins,1) #sum over cols
+            H /= tmp
+        if avg == 'y' or avg == 'Y':
+            tmp = np.sum(H,axis=1).reshape(1,bins) #sum over rows
+            H /= tmp
+    # Bad name, ignore user's mistake
+    else:
+        pass
+   
+    # Configure colorbar
+   
+    # No log, limits given
     if norm == None and vmin != None and vmax != None:
         norm = mpl.colors.Normalize(vmin=vmin,vmax=vmax)
    
@@ -197,7 +231,7 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,vmin=None,vmax=None,hi
         norm = LogNorm(vmin=H.min(),vmax=H.max()) #Can't have < 1 particles in logspace   
 
    
-    # Plot heatmap ensuring correct plot size
+    # Set plot ranges so it's a nice, square plot with no blank space
     if hist_range != None:
         x_min = hist_range[0][0]
         x_max = hist_range[0][1]
@@ -216,9 +250,14 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,vmin=None,vmax=None,hi
                     **kwags)
     ax.set_aspect(np.fabs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspectratio)
                     
-    #Format colorbar
-    cb = fig.colorbar(im)
-    cb.set_label(labels[2],rotation=270,labelpad=30)
+    #Format colorbar with location if one is given
+    if cb_loc == None:
+        cb = fig.colorbar(im)
+        cb.set_label(labels[2],rotation=270,labelpad=30)
+    else:
+        cbaxes = fig.add_axes(cb_loc) 
+        cb = fig.colorbar(im, cax = cbaxes)     
+        cb.set_label(labels[2],rotation=270,labelpad=30)
     
     #Format axes
     ax.set_xlabel(labels[0])
@@ -226,6 +265,6 @@ def plot_heatmap(x,y,labels=[],bins=50,cm='hot',norm=None,vmin=None,vmax=None,hi
     ax.set_xlim(x.min(),x.max())
     ax.set_ylim(y.min(),y.max())    
  
-    return fig, ax, im, cb
+    return ax, im, cb
   
 #end function
