@@ -208,15 +208,25 @@ def plot_heatmap(x,y,labels=[],bins=50,avg=None,cm='hot',norm=None,vmin=None,vma
    
     # Average over an axis to plot an overdensity?
     if avg != None:
+        # Average over all rows
         if avg == 'x' or avg == 'X':
-            tmp = np.sum(H,axis=0).reshape(bins,1) #sum over cols
-            H /= tmp
+            tmp_mean = np.mean(H,axis=0).reshape(bins,1) #sum along cols
+            H /= tmp_mean
+            #H -= 1.0
+            H = np.log(H)
         if avg == 'y' or avg == 'Y':
-            tmp = np.sum(H,axis=1).reshape(1,bins) #sum over rows
-            H /= tmp
+            tmp_mean = np.mean(H,axis=1).reshape(1,bins) #sum along row
+            H /= tmp_mean
+            #H -= 1.0
+            H = np.log(H)
     # Bad name, ignore user's mistake
     else:
         pass
+   
+    # Get rid of nans, infs and stuff
+    # that come from np.log(0) calls
+    mask = np.isfinite(H)
+    H[~mask] = H[mask].min()
    
     # Configure colorbar
    
@@ -258,6 +268,10 @@ def plot_heatmap(x,y,labels=[],bins=50,avg=None,cm='hot',norm=None,vmin=None,vma
         cbaxes = fig.add_axes(cb_loc) 
         cb = fig.colorbar(im, cax = cbaxes)     
         cb.set_label(labels[2],rotation=270,labelpad=30)
+
+    #Mask nans
+    
+    
     
     #Format axes
     ax.set_xlabel(labels[0])
