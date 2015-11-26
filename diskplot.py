@@ -211,10 +211,10 @@ def plot_heatmap(x,y,labels=[],bins=50,avg=None,cm='hot',norm=None,vmin=None,vma
     if avg != None:
         # Average over all rows
         if avg == 'y' or avg == 'Y':
-            tmp_mean = np.mean(H,axis=0).reshape(bins,1) #mean down columns
+            tmp_mean = np.mean(H,axis=0)#.reshape(bins,1) #mean down columns
             H /= tmp_mean
         if avg == 'x' or avg == 'X':
-            tmp_mean = np.mean(H,axis=1).reshape(1,bins) #mean down rows
+            tmp_mean = np.mean(H,axis=1)#.reshape(1,bins) #mean down rows
             H /= tmp_mean
     # Bad name, ignore user's mistake
     else:
