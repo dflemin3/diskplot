@@ -207,18 +207,15 @@ def plot_heatmap(x,y,labels=[],bins=50,avg=None,cm='hot',norm=None,vmin=None,vma
     H, xedges,yedges = np.histogram2d(x,y,bins=bins,range=hist_range)
    
     # Average over an axis to plot an overdensity?
+    # Note, the H we want is actually H.T
     if avg != None:
         # Average over all rows
-        if avg == 'x' or avg == 'X':
-            tmp_mean = np.mean(H,axis=0).reshape(bins,1) #sum along cols
-            H /= tmp_mean
-            #H -= 1.0
-            H = np.log(H)
         if avg == 'y' or avg == 'Y':
-            tmp_mean = np.mean(H,axis=1).reshape(1,bins) #sum along row
+            tmp_mean = np.mean(H,axis=0).reshape(bins,1) #mean down columns
             H /= tmp_mean
-            #H -= 1.0
-            H = np.log(H)
+        if avg == 'x' or avg == 'X':
+            tmp_mean = np.mean(H,axis=1).reshape(1,bins) #mean down rows
+            H /= tmp_mean
     # Bad name, ignore user's mistake
     else:
         pass
@@ -227,7 +224,7 @@ def plot_heatmap(x,y,labels=[],bins=50,avg=None,cm='hot',norm=None,vmin=None,vma
     # that come from np.log(0) calls
     mask = np.isfinite(H)
     H[~mask] = H[mask].min()
-   
+       
     # Configure colorbar
    
     # No log, limits given
@@ -236,8 +233,14 @@ def plot_heatmap(x,y,labels=[],bins=50,avg=None,cm='hot',norm=None,vmin=None,vma
    
     #Log colorbar? limits given?
     if norm == 'log' and vmin!= None and vmax != None:
+        # Set 0s to lowest non-zero value 
+        mask = (H == 0)
+        H[mask] = H[~mask].min()
         norm = LogNorm(vmin=vmin,vmax=vmax) #Can't have < 1 particles in logspace   
     elif norm == 'log': #set default limits
+        # Set 0s to lowest non-zero value 
+        mask = (H == 0)
+        H[mask] = H[~mask].min()
         norm = LogNorm(vmin=H.min(),vmax=H.max()) #Can't have < 1 particles in logspace   
 
    
